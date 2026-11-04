@@ -145,6 +145,13 @@
 .mat-fig{display:flex;justify-content:center;padding:4px 0 2px;color:var(--ink,#152838);overflow-x:auto}
 .mat-fig svg{max-width:100%;height:auto;max-height:240px}
 .mat-fig svg text{font-family:var(--f-body,sans-serif)}
+.stat-chip{display:flex;align-items:center;justify-content:flex-end;gap:5px;margin-top:7px;font:600 12.5px/1.2 var(--f-body);color:var(--ink-2);white-space:nowrap}
+.stat-chip svg{width:16px;height:16px;flex:none;color:var(--post)}
+.stat-chip b,.stat-line b{font-variant-numeric:tabular-nums;color:var(--ink);font-weight:800}
+.stat-line{display:flex;align-items:center;justify-content:center;gap:8px;margin:4px auto 0;padding:8px 16px;border-radius:999px;background:color-mix(in srgb,var(--post) 10%,transparent);color:var(--ink-2);font-size:15px;width:max-content;max-width:100%}
+.stat-line .is-ico{display:inline-grid;place-items:center;color:var(--post)}
+.stat-line .is-ico svg{width:20px;height:20px}
+.stat-line b{font-size:17px}
 </style>
 <title>島嶼小公民探險隊｜建德國小</title>
 <meta name="description" content="島嶼小公民探險隊（建德國小版）：國小社會（三上、四上、五上康軒版，六上翰林版）、自然（三上南一版，四上、五上、六上康軒版）、國語（三上～六上南一版）與數學（三上、五上康軒版，四上、六上翰林版）的 18 關 3D 島嶼冒險，收集紀念郵票並領取通關證書。">
@@ -703,7 +710,7 @@ window.ISLAND_API_URL = "https://script.google.com/macros/s/AKfycbzxm8FkgMygU5sv
     <button type="button" class="chest-btn" id="chestBtn" data-act="chestOpen" hidden aria-label="打開神秘寶箱"><svg viewBox="0 0 48 40" aria-hidden="true"><path d="M5 17h38v19H5z" fill="#9A5F2C"/><path d="M5 17c0-8 6-12 19-12s19 4 19 12z" fill="#B87333"/><path d="M5 17h38v4H5z" fill="#6E4220"/><path d="M11 7v29M37 7v29" stroke="#F2C14E" stroke-width="3"/><rect x="20" y="16" width="8" height="10" rx="2" fill="#F2C14E"/><circle cx="24" cy="21" r="1.6" fill="#6E4220"/></svg><span>神秘寶箱</span></button>
     <button type="button" class="chest-hint" id="chestHint" data-act="chestFly" hidden>✦ 神秘寶箱出現了！快去打開</button>
     <svg class="map flat-map" id="map" viewBox="0 0 1000 640" preserveAspectRatio="xMidYMid meet" role="group" aria-label="群島地圖，18 個關卡地點" hidden></svg>
-    <div class="hud hud-title glass"><div class="eyebrow" id="hudEyebrow">3D Social Adventure</div><h2 id="hudTitle">島嶼星空</h2><div class="subj-tog" id="subjTog" role="group" aria-label="切換科目"></div></div>
+    <div class="hud hud-title glass"><div class="eyebrow" id="hudEyebrow">3D Social Adventure</div><h2 id="hudTitle">島嶼星空</h2><div class="subj-tog" id="subjTog" role="group" aria-label="切換科目"></div><div class="stat-chip" id="statChip" hidden></div></div>
     <div class="hud hud-region glass" id="regionCard" hidden role="region" aria-live="polite" aria-label="群島介紹"></div>
     <div class="hud hud-ctrl glass" role="group" aria-label="視角控制" id="hudCtrl">
       <button class="btn btn-ghost btn-icon btn-sm" data-act="rot-l" aria-label="向左旋轉" data-3d><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 4v4h4"/></svg></button>
@@ -725,6 +732,7 @@ window.ISLAND_API_URL = "https://script.google.com/macros/s/AKfycbzxm8FkgMygU5sv
     <div class="eyebrow">冒險邀請</div>
     <h1 id="inviteTitle">歡迎來到島嶼星空</h1>
     <p>島嶼星空有<b>國語</b>、<b>數學</b>、<b>社會</b>和<b>自然</b>四片海域，三到六年級各有一座課本群島。選好科目和年級，闖過 18 個關卡、收集紀念郵票，就能點亮燈塔、領取冒險證書！</p>
+    <p class="stat-line" id="inviteStats" hidden aria-live="polite"></p>
     <p class="quote">「建德小冒險者，準備出發了嗎？」</p>
     <div class="row" style="justify-content:center">
       <button class="btn btn-ghost" data-act="music"><span aria-hidden="true">♪</span> <span class="music-word">開啟冒險音樂</span></button>
@@ -4147,13 +4155,37 @@ let syncChain=Promise.resolve();
 async function refreshInfo(){if(!HAS_GAS)return false;try{const info=await gs("apiInit");S.classes=info.classes||[];S.settings=info.settings||{};S.online=true;return true}catch(e){S.online=false;return false}}
 async function initCaps(){
   await refreshInfo();
-  S.capsReady=true;
+  S.capsReady=true;setTimeout(()=>loadStats(true),300);
   $("#menuTeacher").hidden=false;$("#inviteTeacher").hidden=false;
   const r=rec();
   if(r&&canSync()){await restoreRemote();queueSync()}else setStatus(r?"local":"none");
   if(IN_GAS&&google.script.url)google.script.url.getLocation(loc=>{if(loc&&loc.parameter&&loc.parameter.page==="teacher"){closeLayer("invite");openTeacher()}});
   else{let pg="";try{pg=new URLSearchParams(location.search).get("page")||""}catch(e){}if(pg==="teacher"){closeLayer("invite");openTeacher()}}
 }
+/* ======================= 累計使用人次 ======================= */
+const STATS={d:null,t:0,shown:{},busy:false};
+function statsFirstVisit(){try{if(sessionStorage.getItem("jiande-visit"))return false;let pg="";try{pg=new URLSearchParams(location.search).get("page")||""}catch(e){}return pg!=="teacher"}catch(e){return false}}
+async function statsFetch(){
+  if(typeof HAS_GAS!=="undefined"){if(!HAS_GAS)return null;const hit=statsFirstVisit();const d=await gs("apiStats",hit?1:0);
+    if(d&&typeof d.visits==="number"){if(hit)try{sessionStorage.setItem("jiande-visit","1")}catch(e){}return d}return null}
+  if(!S.db)return null;
+  const sn=await S.db.collection("board").get();let n=0;for(const d of sn.docs||[])n+=Object.keys(((d.data&&d.data())||{}).entries||{}).length;
+  return{visits:n}}
+async function loadStats(force){
+  if(STATS.busy||(!force&&document.hidden))return;STATS.busy=true;
+  try{const d=await statsFetch();if(d){STATS.d=d;STATS.t=Date.now();renderStats()}}catch(e){}finally{STATS.busy=false}}
+function countUp(el,to,key){const from=STATS.shown[key]==null?Math.max(0,to-Math.min(to,30)):STATS.shown[key];STATS.shown[key]=to;
+  if(from===to||matchMedia("(prefers-reduced-motion: reduce)").matches){el.textContent=to.toLocaleString("zh-TW");return}
+  const t0=performance.now(),dur=900;const step=t=>{const u=Math.min(1,(t-t0)/dur);el.textContent=Math.round(from+(to-from)*(1-Math.pow(1-u,3))).toLocaleString("zh-TW");if(u<1)requestAnimationFrame(step)};requestAnimationFrame(step)}
+function renderStats(){const d=STATS.d;const ok=!!(d&&d.visits>0);
+  const chip=document.getElementById("statChip");
+  if(chip){chip.hidden=!ok;if(ok){if(!chip.firstChild)chip.innerHTML=`${ICONS.people||""}<span>使用人次 <b data-n="v">0</b></span>`;
+    chip.title=`累計使用人次：${d.visits.toLocaleString("zh-TW")}`;chip.setAttribute("aria-label",chip.title);countUp(chip.querySelector('[data-n="v"]'),d.visits,"c")}}
+  const iv=document.getElementById("inviteStats");
+  if(iv){iv.hidden=!ok;if(ok){if(!iv.firstChild)iv.innerHTML=`<span class="is-ico">${ICONS.people||""}</span><span>累計使用人次 <b data-n="v">0</b></span>`;
+    countUp(iv.querySelector('[data-n="v"]'),d.visits,"i")}}}
+setInterval(()=>loadStats(),180000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-STATS.t>60000)loadStats()});
 function canSync(){return !!(HAS_GAS&&S.online&&S.writable)}
 function setStatus(s){S.status=s;const map={none:"冒險準備中",checking:"連線中…",local:"進度存在這台裝置",denied:"班級代碼不正確，尚未同步",syncing:"同步中…",synced:"已同步給老師",error:"同步失敗，稍後再試"};const chip=$("#syncChip");chip.dataset.s=s;$("#syncText").textContent=map[s]||"";chip.setAttribute("aria-label","同步狀態："+(map[s]||""))}
 async function restoreRemote(){
